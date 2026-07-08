@@ -1,0 +1,13 @@
+services:
+  todo-app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - DATABASE_URL=sqlite:///./data/todo.db
+    volumes:
+      - todo-data:/code/data
+
+volumes:
+  todo-data:

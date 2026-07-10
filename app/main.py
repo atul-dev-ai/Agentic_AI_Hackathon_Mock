@@ -69,7 +69,7 @@ def list_todos(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user),
 ):
-    return db.query(models.Todo).all()
+    return db.query(models.Todo).filter(models.Todo.owner_id == current_user.id).all()
 
 
 @app.get("/todos/{todo_id}", response_model=schemas.TodoOut)
@@ -89,7 +89,7 @@ def update_todo(
     current_user: models.User = Depends(auth.get_current_user),
 ):
     todo = _get_owned_todo(db, todo_id, current_user)
-    for field, value in todo_in.model_dump().items():
+    for field, value in todo_in.model_dump(exclude_unset=True).items():
         setattr(todo, field, value)
     db.commit()
     db.refresh(todo)

@@ -1,101 +1,126 @@
-# Simple Todo App (FastAPI)
+# 📝 Simple Todo API (FastAPI)
 
-Minimal todo API with JWT authentication. Each todo has a title, description, deadline, and priority. Users only see their own todos.
+![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
+![SQLite](https://img.shields.io/badge/sqlite-%2307405e.svg?style=for-the-badge&logo=sqlite&logoColor=white)
+![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
 
-## Stack
+A minimal, lightning-fast Todo REST API built with **FastAPI**. It features secure JWT authentication, password hashing, and user-specific task management where each user can only access their own todos.
 
-- FastAPI + SQLAlchemy (SQLite)
-- JWT auth (python-jose) + bcrypt password hashing (passlib)
-- Docker / docker-compose
+---
 
-## Run with Docker
+## ✨ Features
 
+- **User Authentication:** Secure signup and login using JWT (`python-jose`) and `bcrypt` password hashing.
+- **Task Management:** Create, read, update, and delete (CRUD) your own todo items.
+- **Task Attributes:** Manage your tasks with titles, descriptions, deadlines, and priority levels (Low, Medium, High).
+- **Data Isolation:** Strict ownership validation ensures you only see what belongs to you.
+- **Interactive Docs:** Auto-generated Swagger UI for easy API testing.
+
+## 🛠️ Tech Stack
+
+- **Framework:** FastAPI
+- **Database:** SQLAlchemy + SQLite
+- **Auth:** OAuth2 with Password Flow & JWT Bearer
+- **Deployment:** Docker & Docker Compose
+
+---
+
+## 🚀 Getting Started
+
+You can run this project with or without Docker.
+
+### 🐳 Run with Docker (Recommended)
+
+Simply spin up the containers:
 ```bash
 docker compose up --build
 ```
+> The API will be available at `http://localhost:8000`. 
+> Data is persisted automatically in a Docker volume.
 
-App runs at `http://localhost:8000`. SQLite file persists in the `todo-data` volume.
+### 💻 Run Locally (Without Docker)
 
-Optional: set a real secret via env var before starting:
+1. **Create and activate a virtual environment:**
+   ```bash
+   python -m venv .venv
+   
+   # On macOS/Linux:
+   source .venv/bin/activate
+   # On Windows:
+   .venv\Scripts\activate
+   ```
 
+2. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Start the server:**
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+
+---
+
+## 📖 API Documentation
+
+Once the server is running, visit **[http://localhost:8000/docs](http://localhost:8000/docs)** to view the interactive Swagger UI and test the endpoints directly from your browser!
+
+### 🔐 Authentication
+
+| Method | Endpoint | Description | Body Requirements |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/auth/register` | Create a new user | JSON: `{"username", "password"}` |
+| `POST` | `/auth/login` | Log in & get JWT | `x-www-form-urlencoded`: `username`, `password` |
+
+> ⚠️ **Note:** The `/auth/login` endpoint strictly requires `x-www-form-urlencoded` format.
+
+### 📋 Todos
+
+*Requires header: `Authorization: Bearer <access_token>`*
+
+| Method | Endpoint | Description | Body Requirements |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/todos` | Create a new todo | JSON: `title`*, `description`, `deadline`, `priority` |
+| `GET` | `/todos` | List all your todos | - |
+| `GET` | `/todos/{id}` | Get a specific todo | - |
+| `PUT` | `/todos/{id}` | Update a todo | JSON (Any subset of create fields) |
+| `DELETE` | `/todos/{id}` | Delete a todo | - |
+
+---
+
+## 🧪 Testing with cURL
+
+Here are some quick commands to get you started:
+
+<details>
+<summary><b>Show cURL Commands</b></summary>
+
+**1. Register**
 ```bash
-SECRET_KEY=some-long-random-string docker compose up --build
-```
-
-## Run without Docker
-
-```bash
-python -m venv .venv
-.venv/Scripts/activate      # Windows
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
-
-## API
-
-Interactive docs at `http://localhost:8000/docs`.
-
-### Auth
-
-| Method | Path | Body | Description |
-|---|---|---|---|
-| POST | `/auth/register` | JSON `{"username", "password"}` | Create a user |
-| POST | `/auth/login` | form-urlencoded `username`, `password` | Returns `{"access_token", "token_type"}` |
-
-`/auth/login` must be sent as `x-www-form-urlencoded`, not JSON (OAuth2 password flow requirement).
-
-All `/todos` endpoints require header `Authorization: Bearer <access_token>`.
-
-### Todos
-
-| Method | Path | Body | Description |
-|---|---|---|---|
-| POST | `/todos` | `{"title", "description", "deadline", "priority"}` | Create a todo |
-| GET | `/todos` | - | List your todos |
-| GET | `/todos/{id}` | - | Get one todo |
-| PUT | `/todos/{id}` | any subset of the create fields | Edit a todo |
-| DELETE | `/todos/{id}` | - | Delete a todo |
-
-Field notes:
-- `title`: string, required
-- `description`: string, optional
-- `deadline`: ISO 8601 datetime string, optional, e.g. `2026-07-10T18:30:00`
-- `priority`: one of `low`, `medium`, `high`, default `medium`
-
-## Example requests (curl)
-
-```bash
-# Register
 curl -X POST http://localhost:8000/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username": "alice", "password": "pass123"}'
-
-# Login (form-urlencoded, NOT json)
-curl -X POST http://localhost:8000/auth/login \
-  -d "username=alice&password=pass123"
-# -> {"access_token": "<TOKEN>", "token_type": "bearer"}
-
-# Create a todo
-curl -X POST http://localhost:8000/todos \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"title": "Buy milk", "description": "2% milk", "deadline": "2026-07-10T18:30:00", "priority": "high"}'
-
-# List todos
-curl http://localhost:8000/todos -H "Authorization: Bearer <TOKEN>"
-
-# Edit a todo (any subset of fields)
-curl -X PUT http://localhost:8000/todos/1 \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"priority": "low"}'
-
-# Delete a todo
-curl -X DELETE http://localhost:8000/todos/1 -H "Authorization: Bearer <TOKEN>"
 ```
 
-## Postman quick setup
+**2. Login**
+```bash
+curl -X POST http://localhost:8000/auth/login \
+  -d "username=alice&password=pass123"
+```
+*(Copy the `access_token` from the response)*
 
-1. **Register**: POST `http://localhost:8000/auth/register`, Body → `raw` / JSON → `{"username": "alice", "password": "pass123"}`
-2. **Login**: POST `http://localhost:8000/auth/login`, Body → `x-www-form-urlencoded` → keys `username`, `password`. Copy `access_token` from response.
-3. **Todos**: any `/todos` request → Authorization tab → type `Bearer Token` → paste token (or add header `Authorization: Bearer <token>` manually).
+**3. Create a Todo**
+```bash
+curl -X POST http://localhost:8000/todos \
+  -H "Authorization: Bearer <YOUR_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Buy milk", "priority": "high"}'
+```
+
+**4. View Todos**
+```bash
+curl http://localhost:8000/todos -H "Authorization: Bearer <YOUR_TOKEN>"
+```
+
+</details>
